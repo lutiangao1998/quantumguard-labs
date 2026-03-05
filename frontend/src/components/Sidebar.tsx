@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, GitBranch,
-  FileText, Wifi, ChevronRight, Layers, History, Hexagon, Map, Usb, Zap, Shield,
+  FileText, Wifi, ChevronRight, Layers, History, Hexagon, Map, Usb, Zap, Shield, ShieldCheck,
 } from 'lucide-react'
 
 const links = [
