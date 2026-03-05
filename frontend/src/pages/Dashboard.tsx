@@ -89,26 +89,24 @@ export default function Dashboard() {
     { name: 'SAFE',     count: data.safe_count,     btc: 0 },
   ] : []
 
-  // Custom label to prevent overflow and reduce font size
-  const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, name }: any) => {
-    const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 15;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill={RISK_COLORS[name]} 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central" 
-        fontSize="10" 
-        fontWeight="600"
-      >
-        {`${name} ${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
+  // Custom tooltip for pie chart
+  const PieTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const { name, value } = payload[0];
+      const total = pieData.reduce((sum: number, item: any) => sum + item.value, 0);
+      const percent = ((value / total) * 100).toFixed(1);
+      return (
+        <div className="bg-slate-900 border border-slate-700 rounded px-3 py-2 shadow-lg">
+          <p className="text-xs font-semibold" style={{ color: RISK_COLORS[name] }}>
+            {name}
+          </p>
+          <p className="text-xs text-slate-300">
+            {value} UTXOs ({percent}%)
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -149,9 +147,9 @@ export default function Dashboard() {
             {/* Gauge + Pie */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-slate-300 mb-4">Portfolio Risk Composition</h2>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center gap-4">
                 <ScoreGauge score={data.quantum_readiness_score} />
-                <div className="flex-1 h-48">
+                <div className="w-full h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie 
@@ -159,17 +157,34 @@ export default function Dashboard() {
                         dataKey="value" 
                         cx="50%" 
                         cy="50%" 
-                        outerRadius={55} 
-                        label={renderCustomizedLabel}
-                        labelLine={true}
+                        outerRadius={70}
+                        label={false}
                       >
                         {pieData.map(entry => (
                           <Cell key={entry.name} fill={RISK_COLORS[entry.name]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v: any) => [`${v} UTXOs`, '']} />
+                      <Tooltip content={<PieTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
+                </div>
+                {/* Legend below pie chart */}
+                <div className="w-full grid grid-cols-2 gap-2 text-xs">
+                  {pieData.map(item => {
+                    const total = pieData.reduce((sum: number, d: any) => sum + d.value, 0);
+                    const percent = ((item.value / total) * 100).toFixed(1);
+                    return (
+                      <div key={item.name} className="flex items-center gap-2">
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: RISK_COLORS[item.name] }}
+                        />
+                        <span className="text-slate-400">
+                          {item.name.slice(0, 3)} {percent}%
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
