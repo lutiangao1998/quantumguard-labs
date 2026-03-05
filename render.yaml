@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: quantumguard-labs
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "python -m uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /api/health
+    autoDeploy: true

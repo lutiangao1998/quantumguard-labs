@@ -36,7 +36,13 @@ app.include_router(migration.router, prefix="/api/migration", tags=["Migration"]
 app.include_router(reports.router,   prefix="/api/reports",  tags=["Reports"])
 app.include_router(blockchain.router, prefix="/api/blockchain", tags=["Blockchain"])
 
+@app.get("/api/health", tags=["Health"])
+async def health():
+    return {"status": "ok", "version": "0.1.0", "service": "QuantumGuard Labs API"}
+
+
 # Serve React frontend static files (built output)
+# MUST be registered AFTER all API routes
 FRONTEND_BUILD = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.isdir(FRONTEND_BUILD):
     app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_BUILD, "assets")), name="assets")
@@ -45,8 +51,3 @@ if os.path.isdir(FRONTEND_BUILD):
     async def serve_frontend(full_path: str):
         index = os.path.join(FRONTEND_BUILD, "index.html")
         return FileResponse(index)
-
-
-@app.get("/api/health", tags=["Health"])
-async def health():
-    return {"status": "ok", "version": "0.1.0", "service": "QuantumGuard Labs API"}
