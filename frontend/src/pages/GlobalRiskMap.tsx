@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertTriangle, TrendingUp } from 'lucide-react';
-import { LatLngExpression } from 'leaflet';
+import type { LatLngExpression } from 'leaflet';
 
 interface RiskMarker {
   lat: number;
