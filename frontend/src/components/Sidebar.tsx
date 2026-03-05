@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, GitBranch,
-  FileText, Wifi, ChevronRight, Layers, History, Hexagon,
+  FileText, Wifi, ChevronRight, Layers, History, Hexagon, Map,
 } from 'lucide-react'
 
 const links = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard',          group: 'Overview' },
+  { to: '/map',       icon: Map,             label: 'Global Risk Map',    group: 'Overview' },
   { to: '/analysis',  icon: ShieldAlert,     label: 'Risk Analysis',      group: 'Bitcoin' },
   { to: '/testnet',   icon: Wifi,            label: 'BTC Testnet Scan',   group: 'Bitcoin' },
   { to: '/batch',     icon: Layers,          label: 'Batch Scanner',      group: 'Bitcoin' },
