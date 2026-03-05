@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Code, Zap, Bell, CheckCircle, XCircle, Info, AlertTriangle, Send } from 'lucide-react';
+import { Users, Code, Zap, Bell, CheckCircle, AlertTriangle, Send } from 'lucide-react';
 
 export default function Ecosystem() {
   const [activeTab, setActiveTab] = useState('multisig');
