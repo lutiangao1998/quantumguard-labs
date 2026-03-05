@@ -1,0 +1,22 @@
+# QuantumGuard Labs - Python Dependencies
+
+# Core dependencies for the application logic
+# In a real project, you would pin versions, e.g., pandas==2.2.0
+pandas
+numpy
+
+# For blockchain interaction (replace with actual library used)
+# e.g., python-bitcoinlib or a custom RPC wrapper
+
+# For API server (if exposing services)
+fastapi
+uvicorn[standard]
+
+# For report generation
+# e.g., reportlab or weasyprint
+
+# For post-quantum cryptography (replace with actual PQC library)
+# e.g., oqs or a specific algorithm library like dilithium-py
+
+# Dependencies for testing
+pytest
