@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, GitBranch,
-  FileText, Wifi, ChevronRight, Layers, History, Hexagon, Map, Usb,
+  FileText, Wifi, ChevronRight, Layers, History, Hexagon, Map, Usb, Zap,
 } from 'lucide-react'
 
 const links = [
@@ -15,6 +15,7 @@ const links = [
   { to: '/reports',   icon: FileText,        label: 'Compliance Reports', group: 'Actions' },
   { to: '/history',   icon: History,         label: 'Scan History',       group: 'Data' },
   { to: '/hardware_wallet', icon: Usb,             label: 'Hardware Wallet PQC', group: 'Actions' },
+  { to: '/ecosystem',       icon: Zap,             label: 'Ecosystem & Auto',   group: 'Actions' },
 ]
 
 const groups = ['Overview', 'Bitcoin', 'Ethereum', 'Actions', 'Data']

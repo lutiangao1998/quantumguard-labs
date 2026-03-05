@@ -10,6 +10,7 @@ import EthereumScanner from './pages/EthereumScanner'
 import History from './pages/History'
 import GlobalRiskMap from './pages/GlobalRiskMap'
 import HardwareWallet from './pages/HardwareWallet'
+import Ecosystem from './pages/Ecosystem'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/history"   element={<History />} />
             <Route path="/map"       element={<GlobalRiskMap />} />
             <Route path="/hardware_wallet" element={<HardwareWallet />} />
+            <Route path="/ecosystem"       element={<Ecosystem />} />
           </Routes>
         </main>
       </div>
