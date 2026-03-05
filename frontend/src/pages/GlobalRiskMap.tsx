@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertTriangle, TrendingUp } from 'lucide-react';
+import { LatLngExpression } from 'leaflet';
 
 interface RiskMarker {
   lat: number;
@@ -28,7 +28,6 @@ export default function GlobalRiskMap() {
       });
       const data = await response.json();
       
-      // 将 GeoJSON 转换为 markers
       const convertedMarkers: RiskMarker[] = data.features.map((feature: any) => ({
         lat: feature.geometry.coordinates[1],
         lng: feature.geometry.coordinates[0],
@@ -38,7 +37,7 @@ export default function GlobalRiskMap() {
       }));
       
       setMarkers(convertedMarkers);
-      setGlobalStats({ btc: 15000, eth: 8000 }); // 示例数据
+      setGlobalStats({ btc: 15000, eth: 8000 });
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch map data:', error);
@@ -71,10 +70,11 @@ export default function GlobalRiskMap() {
     );
   }
 
+  const mapCenter: LatLngExpression = [20, 0];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <TrendingUp className="w-8 h-8 text-blue-400" />
@@ -83,7 +83,6 @@ export default function GlobalRiskMap() {
           <p className="text-gray-400">Real-time visualization of quantum-vulnerable assets across Bitcoin and Ethereum networks</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <div className="flex items-center justify-between">
@@ -105,9 +104,8 @@ export default function GlobalRiskMap() {
           </div>
         </div>
 
-        {/* Map Container */}
         <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden" style={{ height: '600px' }}>
-          <MapContainer center={[20, 0]} zoom={2} style={{ height: '100%', width: '100%' }}>
+          <MapContainer center={mapCenter} zoom={2} style={{ height: '100%', width: '100%' }}>
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; OpenStreetMap contributors'
@@ -115,13 +113,15 @@ export default function GlobalRiskMap() {
             {markers.map((marker, idx) => (
               <CircleMarker
                 key={idx}
-                center={[marker.lat, marker.lng]}
+                center={[marker.lat, marker.lng] as LatLngExpression}
                 radius={getRiskRadius(marker.value)}
-                fillColor={getRiskColor(marker.risk)}
-                color={getRiskColor(marker.risk)}
-                weight={2}
-                opacity={0.8}
-                fillOpacity={0.6}
+                pathOptions={{
+                  fillColor: getRiskColor(marker.risk),
+                  color: getRiskColor(marker.risk),
+                  weight: 2,
+                  opacity: 0.8,
+                  fillOpacity: 0.6
+                }}
               >
                 <Popup>
                   <div className="text-sm">
@@ -135,7 +135,6 @@ export default function GlobalRiskMap() {
           </MapContainer>
         </div>
 
-        {/* Legend */}
         <div className="mt-6 bg-slate-800 rounded-lg p-4 border border-slate-700">
           <p className="text-gray-400 text-sm mb-3">Risk Level Legend</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
