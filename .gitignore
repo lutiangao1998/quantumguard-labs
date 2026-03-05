@@ -51,3 +51,7 @@ config/secrets.yml
 .DS_Store
 Thumbs.db
 .github/
+
+# Auth database & demo key (runtime generated)
+data/auth.db
+data/.demo_key

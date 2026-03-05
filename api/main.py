@@ -10,12 +10,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-from api.routers import analysis, migration, reports, blockchain
+from api.routers import analysis, migration, reports, blockchain, keys
+from api.auth import init_db, _ensure_demo_key
 
 app = FastAPI(
     title="QuantumGuard Labs API",
     description="Quantum-safe asset migration infrastructure for digital assets.",
-    version="0.1.0",
+    version="0.2.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
@@ -31,14 +32,23 @@ app.add_middleware(
 )
 
 # API routers
-app.include_router(analysis.router, prefix="/api/analysis", tags=["Risk Analysis"])
-app.include_router(migration.router, prefix="/api/migration", tags=["Migration"])
-app.include_router(reports.router,   prefix="/api/reports",  tags=["Reports"])
+app.include_router(analysis.router,   prefix="/api/analysis",   tags=["Risk Analysis"])
+app.include_router(migration.router,  prefix="/api/migration",  tags=["Migration"])
+app.include_router(reports.router,    prefix="/api/reports",    tags=["Reports"])
 app.include_router(blockchain.router, prefix="/api/blockchain", tags=["Blockchain"])
+app.include_router(keys.router,       prefix="/api/keys",       tags=["API Keys"])
+
+
+@app.on_event("startup")
+async def startup():
+    """Initialize database and create demo key on first run."""
+    init_db()
+    _ensure_demo_key()
+
 
 @app.get("/api/health", tags=["Health"])
 async def health():
-    return {"status": "ok", "version": "0.1.0", "service": "QuantumGuard Labs API"}
+    return {"status": "ok", "version": "0.2.0", "service": "QuantumGuard Labs API"}
 
 
 # Serve React frontend static files (built output)
