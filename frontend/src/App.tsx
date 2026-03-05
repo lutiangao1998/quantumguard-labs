@@ -9,6 +9,7 @@ import BatchScanner from './pages/BatchScanner'
 import EthereumScanner from './pages/EthereumScanner'
 import History from './pages/History'
 import GlobalRiskMap from './pages/GlobalRiskMap'
+import HardwareWallet from './pages/HardwareWallet'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/ethereum"  element={<EthereumScanner />} />
             <Route path="/history"   element={<History />} />
             <Route path="/map"       element={<GlobalRiskMap />} />
+            <Route path="/hardware_wallet" element={<HardwareWallet />} />
           </Routes>
         </main>
       </div>
