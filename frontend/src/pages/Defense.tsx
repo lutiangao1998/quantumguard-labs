@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, ArrowRightLeft, Heart, Globe, Activity, CheckCircle, AlertTriangle, Search, Lock, TrendingUp } from 'lucide-react';
+import { Shield, ArrowRightLeft, Heart, Globe, Activity, CheckCircle, Search, Lock, TrendingUp } from 'lucide-react';
 
 export default function Defense() {
   const [activeTab, setActiveTab] = useState('bridge');
