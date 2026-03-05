@@ -68,7 +68,6 @@ export default function HardwareWallet() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <HardDrive className="w-8 h-8 text-purple-400" />
@@ -77,7 +76,6 @@ export default function HardwareWallet() {
           <p className="text-gray-400">Integrate and manage your quantum-safe hardware wallets for secure asset migration.</p>
         </div>
 
-        {/* Connection Section */}
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">1. Connect Device</h2>
           <div className="flex items-center gap-4 mb-4">
@@ -106,7 +104,6 @@ export default function HardwareWallet() {
           )}
         </div>
 
-        {/* PQC Signing Section */}
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">2. Prepare PQC Signing Payload</h2>
           <div className="mb-4">
@@ -117,7 +114,7 @@ export default function HardwareWallet() {
               rows={5}
               value={txData}
               onChange={(e) => setTxData(e.target.value)}
-              placeholder="e.g., { \"hash\": \"0x...\", \"amount\": 1.0 }"
+              placeholder='e.g., { "hash": "0x...", "amount": 1.0 }'
             ></textarea>
           </div>
           <div className="flex items-center gap-4 mb-4">
@@ -144,7 +141,6 @@ export default function HardwareWallet() {
           )}
         </div>
 
-        {/* Signature Verification Section */}
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
           <h2 className="text-xl font-semibold text-white mb-4">3. Verify PQC Signature</h2>
           <div className="mb-4">
