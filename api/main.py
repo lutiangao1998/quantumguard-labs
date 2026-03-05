@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-from api.routers import analysis, migration, reports, blockchain, keys, intelligence, hardware_wallet, ecosystem, defense
+from api.routers import analysis, migration, reports, blockchain, keys, intelligence, hardware_wallet, ecosystem, defense, compliance_privacy
 from api.auth import init_db, _ensure_demo_key
 
 app = FastAPI(
