@@ -5,19 +5,25 @@ import Analysis from './pages/Analysis'
 import Migration from './pages/Migration'
 import Reports from './pages/Reports'
 import TestnetScanner from './pages/TestnetScanner'
+import BatchScanner from './pages/BatchScanner'
+import EthereumScanner from './pages/EthereumScanner'
+import History from './pages/History'
 
 export default function App() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-slate-950">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-6">
           <Routes>
             <Route path="/"          element={<Dashboard />} />
             <Route path="/analysis"  element={<Analysis />} />
             <Route path="/migration" element={<Migration />} />
             <Route path="/reports"   element={<Reports />} />
             <Route path="/testnet"   element={<TestnetScanner />} />
+            <Route path="/batch"     element={<BatchScanner />} />
+            <Route path="/ethereum"  element={<EthereumScanner />} />
+            <Route path="/history"   element={<History />} />
           </Routes>
         </main>
       </div>

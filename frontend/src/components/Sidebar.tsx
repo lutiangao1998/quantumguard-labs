@@ -1,16 +1,21 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ShieldAlert, GitBranch,
-  FileText, Wifi, ChevronRight,
+  FileText, Wifi, ChevronRight, Layers, History, Hexagon,
 } from 'lucide-react'
 
 const links = [
-  { to: '/',          icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/analysis',  icon: ShieldAlert,     label: 'Risk Analysis' },
-  { to: '/migration', icon: GitBranch,       label: 'Migration Planner' },
-  { to: '/reports',   icon: FileText,        label: 'Compliance Reports' },
-  { to: '/testnet',   icon: Wifi,            label: 'Testnet Scanner' },
+  { to: '/',          icon: LayoutDashboard, label: 'Dashboard',          group: 'Overview' },
+  { to: '/analysis',  icon: ShieldAlert,     label: 'Risk Analysis',      group: 'Bitcoin' },
+  { to: '/testnet',   icon: Wifi,            label: 'BTC Testnet Scan',   group: 'Bitcoin' },
+  { to: '/batch',     icon: Layers,          label: 'Batch Scanner',      group: 'Bitcoin' },
+  { to: '/ethereum',  icon: Hexagon,         label: 'Ethereum Scanner',   group: 'Ethereum' },
+  { to: '/migration', icon: GitBranch,       label: 'Migration Planner',  group: 'Actions' },
+  { to: '/reports',   icon: FileText,        label: 'Compliance Reports', group: 'Actions' },
+  { to: '/history',   icon: History,         label: 'Scan History',       group: 'Data' },
 ]
+
+const groups = ['Overview', 'Bitcoin', 'Ethereum', 'Actions', 'Data']
 
 export default function Sidebar() {
   return (
@@ -23,31 +28,43 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="text-white font-bold text-sm leading-tight">QuantumGuard</div>
-            <div className="text-slate-400 text-xs">Labs QMP v0.1</div>
+            <div className="text-slate-400 text-xs">Labs QMP v0.2</div>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {links.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${
-                isActive
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`
-            }
-          >
-            <Icon size={16} />
-            <span className="flex-1">{label}</span>
-            <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-          </NavLink>
-        ))}
+      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        {groups.map(group => {
+          const groupLinks = links.filter(l => l.group === group)
+          return (
+            <div key={group}>
+              <div className="px-3 mb-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                {group}
+              </div>
+              <div className="space-y-0.5">
+                {groupLinks.map(({ to, icon: Icon, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/'}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group ${
+                        isActive
+                          ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`
+                    }
+                  >
+                    <Icon size={16} />
+                    <span className="flex-1">{label}</span>
+                    <ChevronRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </nav>
 
       {/* Footer */}
