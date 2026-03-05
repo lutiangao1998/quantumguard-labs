@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  --brand-blue: #1a73e8;
+  --brand-teal: #00bcd4;
+  --dark-bg: #0d1117;
+  --critical: #f44336;
+  --high: #ff9800;
+  --medium: #ffc107;
+  --low: #4caf50;
+  --safe: #2196f3;
+}
+
+body {
+  margin: 0;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.risk-critical { color: var(--critical); }
+.risk-high     { color: var(--high); }
+.risk-medium   { color: var(--medium); }
+.risk-low      { color: var(--low); }
+.risk-safe     { color: var(--safe); }

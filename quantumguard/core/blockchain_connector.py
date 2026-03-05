@@ -1,114 +1,71 @@
 """
 QuantumGuard Labs - Blockchain Connector
 =========================================
-Provides a unified interface for interacting with Bitcoin (and future blockchain)
-nodes. This module abstracts away the specifics of different node implementations
-(Bitcoin Core RPC, Electrum protocol, third-party APIs) to provide a clean,
-consistent data access layer for the rest of the platform.
+Provides a unified interface for interacting with Bitcoin nodes and APIs.
 
 Supported backends:
-  - Bitcoin Core (via JSON-RPC)
-  - Electrum Protocol (for SPV-style access)
-  - Mock/Stub (for testing and demonstration)
+  - BitcoinCoreConnector:          Local Bitcoin Core node via JSON-RPC.
+  - BlockstreamTestnetConnector:   Real Testnet UTXO data via Blockstream.info API.
+  - MockBitcoinConnector:          Deterministic mock data for testing and demos.
 
 Usage:
-    # For production with a local Bitcoin Core node:
-    connector = BitcoinCoreConnector(rpc_url="http://localhost:8332", ...)
-    utxos = connector.get_utxos_for_address("1A1zP1eP5QGefi2DMPTfTL5SLmv7Divf")
+    # Real Testnet (no node required):
+    connector = BlockstreamTestnetConnector()
+    utxos = connector.get_utxos_for_address("tb1q...")
 
-    # For testing:
+    # Demo/testing:
     connector = MockBitcoinConnector()
-    utxos = connector.get_utxos_for_address("test_address")
+    utxos = connector.get_portfolio_utxos(count=200)
 """
 
 import logging
 import random
+import hashlib
+import requests
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from ..analyzer.models import ScriptType, UTXO
-from ..analyzer.bitcoin_analyzer import classify_script_type
+from quantumguard.analyzer.models import UTXO, ScriptType
 
 logger = logging.getLogger(__name__)
 
+SATOSHI = 1e-8
 
-# --- Abstract Connector Interface ---
+
+# ── Abstract Base ─────────────────────────────────────────────────────────────
 
 class BaseBlockchainConnector(ABC):
-    """
-    Abstract base class for blockchain data connectors.
-    All concrete connectors MUST implement this interface.
-    """
+    """Abstract base class for all Bitcoin connectors."""
 
     @abstractmethod
     def get_utxos_for_address(self, address: str) -> list[UTXO]:
-        """
-        Fetches all unspent transaction outputs (UTXOs) for a given address.
-
-        Args:
-            address: The Bitcoin address to query.
-
-        Returns:
-            A list of UTXO objects associated with the address.
-        """
+        """Fetch all UTXOs for a given address."""
         ...
 
     @abstractmethod
-    def get_utxo_set(self, limit: int = 1000) -> list[UTXO]:
-        """
-        Fetches a sample of UTXOs from the full UTXO set.
-        Used for portfolio-level risk analysis.
-
-        Args:
-            limit: Maximum number of UTXOs to return.
-
-        Returns:
-            A list of UTXO objects.
-        """
+    def get_portfolio_utxos(self, count: int = 200) -> list[UTXO]:
+        """Fetch a portfolio-level sample of UTXOs."""
         ...
 
-    @abstractmethod
     def broadcast_transaction(self, tx_hex: str) -> Optional[str]:
-        """
-        Broadcasts a signed raw transaction to the network.
+        """Broadcast a signed raw transaction. Returns txid or None."""
+        return None
 
-        Args:
-            tx_hex: The signed raw transaction in hexadecimal format.
-
-        Returns:
-            The transaction ID (txid) if successful, None otherwise.
-        """
-        ...
-
-    @abstractmethod
     def get_transaction(self, txid: str) -> Optional[dict]:
-        """
-        Retrieves a transaction by its ID.
+        """Retrieve a transaction by txid."""
+        return None
 
-        Args:
-            txid: The transaction ID.
-
-        Returns:
-            A dictionary containing transaction details, or None if not found.
-        """
-        ...
+    # Alias for backward compatibility
+    def get_utxo_set(self, limit: int = 1000) -> list[UTXO]:
+        return self.get_portfolio_utxos(count=limit)
 
 
-# --- Bitcoin Core RPC Connector ---
+# ── Bitcoin Core RPC Connector ────────────────────────────────────────────────
 
 class BitcoinCoreConnector(BaseBlockchainConnector):
     """
-    Connects to a Bitcoin Core node via its JSON-RPC interface.
-
-    This is the recommended connector for production deployments where
-    a full node is available. It provides the most accurate and complete
-    view of the blockchain.
-
-    Args:
-        rpc_url:    The URL of the Bitcoin Core RPC endpoint.
-        rpc_user:   The RPC username (from bitcoin.conf).
-        rpc_password: The RPC password (from bitcoin.conf).
-        network:    The Bitcoin network ('mainnet', 'testnet', 'regtest').
+    Connects to a Bitcoin Core node via JSON-RPC.
+    Recommended for production deployments with a full node.
     """
 
     def __init__(
@@ -119,152 +76,224 @@ class BitcoinCoreConnector(BaseBlockchainConnector):
         network: str = "mainnet",
     ):
         self.rpc_url = rpc_url
-        self.rpc_user = rpc_user
-        self.rpc_password = rpc_password
+        self.auth = (rpc_user, rpc_password)
         self.network = network
         logger.info(f"BitcoinCoreConnector initialized for {network} at {rpc_url}")
 
     def _rpc_call(self, method: str, params: list = None) -> dict:
-        """
-        Makes a JSON-RPC call to the Bitcoin Core node.
-        In production, this would use the 'requests' library.
-        """
-        # Stub: In production, implement with:
-        # import requests
-        # response = requests.post(
-        #     self.rpc_url,
-        #     auth=(self.rpc_user, self.rpc_password),
-        #     json={"jsonrpc": "1.0", "id": "qmp", "method": method, "params": params or []}
-        # )
-        # return response.json()["result"]
-        logger.debug(f"RPC call (stub): {method}({params})")
-        return {}
+        payload = {"jsonrpc": "1.0", "id": "qg", "method": method, "params": params or []}
+        resp = requests.post(self.rpc_url, json=payload, auth=self.auth, timeout=30)
+        resp.raise_for_status()
+        result = resp.json()
+        if result.get("error"):
+            raise RuntimeError(f"RPC Error: {result['error']}")
+        return result["result"]
 
     def get_utxos_for_address(self, address: str) -> list[UTXO]:
-        """Fetches UTXOs for an address using 'scantxoutset' or 'listunspent'."""
-        logger.info(f"Fetching UTXOs for address: {address}")
-        # In production: self._rpc_call("scantxoutset", ["start", [f"addr({address})"]])
-        return []
+        raw = self._rpc_call("listunspent", [0, 9999999, [address]])
+        return [self._parse_rpc_utxo(u, address) for u in raw]
 
-    def get_utxo_set(self, limit: int = 1000) -> list[UTXO]:
-        """Fetches a sample of the UTXO set using 'gettxoutsetinfo' and 'scantxoutset'."""
-        logger.info(f"Fetching UTXO set sample (limit={limit})...")
-        return []
+    def get_portfolio_utxos(self, count: int = 200) -> list[UTXO]:
+        raw = self._rpc_call("listunspent", [0, 9999999])
+        return [self._parse_rpc_utxo(u, u.get("address", "")) for u in raw[:count]]
 
-    def broadcast_transaction(self, tx_hex: str) -> Optional[str]:
-        """Broadcasts a transaction using 'sendrawtransaction'."""
-        logger.info(f"Broadcasting transaction: {tx_hex[:20]}...")
-        # In production: return self._rpc_call("sendrawtransaction", [tx_hex])
-        return None
+    @staticmethod
+    def _parse_rpc_utxo(u: dict, address: str) -> UTXO:
+        script_hex = u.get("scriptPubKey", "")
+        script_type = BitcoinCoreConnector._classify_script(script_hex)
+        return UTXO(
+            txid=u["txid"],
+            vout=u["vout"],
+            address=address,
+            value_btc=float(u.get("amount", 0)),
+            script_type=script_type,
+            is_pubkey_exposed=script_type == ScriptType.P2PK,
+            is_reused=False,
+        )
 
-    def get_transaction(self, txid: str) -> Optional[dict]:
-        """Retrieves a transaction using 'getrawtransaction'."""
-        # In production: return self._rpc_call("getrawtransaction", [txid, True])
-        return None
+    @staticmethod
+    def _classify_script(script_hex: str) -> ScriptType:
+        if script_hex.startswith("76a914"):   return ScriptType.P2PKH
+        if script_hex.startswith("a914"):     return ScriptType.P2SH
+        if script_hex.startswith("0014"):     return ScriptType.P2WPKH
+        if script_hex.startswith("0020"):     return ScriptType.P2WSH
+        if script_hex.startswith("5120"):     return ScriptType.P2TR
+        if script_hex.endswith("ac"):         return ScriptType.P2PK
+        return ScriptType.UNKNOWN
 
 
-# --- Mock Connector for Testing and Demonstration ---
+# ── Blockstream Testnet Connector ─────────────────────────────────────────────
 
-# Predefined script hex patterns for generating realistic test UTXOs
-_MOCK_SCRIPTS = {
-    ScriptType.P2PK: "4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac",
-    ScriptType.P2PKH: "76a914{hash}88ac",
-    ScriptType.P2WPKH: "0014{hash}",
-    ScriptType.P2TR: "5120{hash}",
-}
+class BlockstreamTestnetConnector(BaseBlockchainConnector):
+    """
+    Fetches REAL Bitcoin Testnet UTXO data via the Blockstream.info public API.
+    No API key required. Suitable for live demos and testnet validation.
 
+    API docs: https://github.com/Blockstream/esplora/blob/master/API.md
+    """
+
+    BASE_URL = "https://blockstream.info/testnet/api"
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({"User-Agent": "QuantumGuard-Labs/0.1"})
+        logger.info("BlockstreamTestnetConnector initialized (Bitcoin Testnet via Blockstream).")
+
+    def get_utxos_for_address(self, address: str) -> list[UTXO]:
+        """Fetch real UTXOs for a Bitcoin testnet address."""
+        try:
+            resp = self.session.get(f"{self.BASE_URL}/address/{address}/utxo", timeout=15)
+            resp.raise_for_status()
+            raw_utxos = resp.json()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Blockstream API error for {address}: {e}")
+            raise RuntimeError(f"Failed to fetch UTXOs from Blockstream API: {e}")
+
+        if not raw_utxos:
+            logger.info(f"No UTXOs found for testnet address: {address}")
+            return []
+
+        script_type = self._classify_address(address)
+        tx_count = self._get_tx_count(address)
+        address_reused = tx_count > 1
+
+        utxos = []
+        for u in raw_utxos:
+            utxos.append(UTXO(
+                txid=u.get("txid", "unknown"),
+                vout=u.get("vout", 0),
+                address=address,
+                value_btc=round(u.get("value", 0) * SATOSHI, 8),
+                script_type=script_type,
+                is_pubkey_exposed=script_type == ScriptType.P2PK,
+                is_reused=address_reused,
+            ))
+
+        logger.info(f"Blockstream: Fetched {len(utxos)} UTXOs for {address} (testnet).")
+        return utxos
+
+    def get_portfolio_utxos(self, count: int = 200) -> list[UTXO]:
+        """Not applicable for Blockstream — use get_utxos_for_address() instead."""
+        raise NotImplementedError(
+            "BlockstreamTestnetConnector does not support portfolio scanning. "
+            "Use get_utxos_for_address(address) instead."
+        )
+
+    def _get_tx_count(self, address: str) -> int:
+        """Get the number of confirmed transactions for an address."""
+        try:
+            resp = self.session.get(f"{self.BASE_URL}/address/{address}", timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("chain_stats", {}).get("tx_count", 0)
+        except Exception:
+            return 0
+
+    @staticmethod
+    def _classify_address(address: str) -> ScriptType:
+        """Infer script type from Bitcoin address format."""
+        if address.startswith("tb1q") and len(address) == 42:
+            return ScriptType.P2WPKH
+        if address.startswith("tb1q") and len(address) > 42:
+            return ScriptType.P2WSH
+        if address.startswith("tb1p"):
+            return ScriptType.P2TR
+        if address.startswith(("m", "n")):
+            return ScriptType.P2PKH
+        if address.startswith("2"):
+            return ScriptType.P2SH
+        return ScriptType.UNKNOWN
+
+
+# ── Mock Connector ────────────────────────────────────────────────────────────
 
 class MockBitcoinConnector(BaseBlockchainConnector):
     """
-    A mock connector that generates synthetic UTXO data for testing,
-    demonstration, and development purposes.
-
-    The generated data is designed to be realistic and representative of
-    the types of UTXOs found on the Bitcoin mainnet, including a mix of
-    script types and risk profiles.
+    Generates deterministic mock UTXO data for testing and demos.
+    Uses a fixed random seed for full reproducibility.
     """
 
+    # Realistic mainnet UTXO set composition
+    SCRIPT_DISTRIBUTION = [
+        (ScriptType.P2PK,   0.05),
+        (ScriptType.P2PKH,  0.35),
+        (ScriptType.P2SH,   0.15),
+        (ScriptType.P2WPKH, 0.25),
+        (ScriptType.P2WSH,  0.05),
+        (ScriptType.P2TR,   0.15),
+    ]
+
     def __init__(self, seed: int = 42):
-        random.seed(seed)
+        self._rng = random.Random(seed)
         logger.info("MockBitcoinConnector initialized (for testing/demo only).")
 
-    def _generate_mock_utxo(self, index: int) -> UTXO:
-        """Generates a single synthetic UTXO with a random script type and risk profile."""
-        # Weighted distribution to simulate realistic mainnet composition
-        script_type_weights = [
-            (ScriptType.P2PK, 0.05),      # ~5% - old Satoshi-era outputs
-            (ScriptType.P2PKH, 0.35),     # ~35% - legacy addresses
-            (ScriptType.P2SH, 0.15),      # ~15% - P2SH (multisig, etc.)
-            (ScriptType.P2WPKH, 0.25),    # ~25% - SegWit v0
-            (ScriptType.P2WSH, 0.05),     # ~5% - SegWit v0 script hash
-            (ScriptType.P2TR, 0.15),      # ~15% - Taproot
-        ]
-        script_types, weights = zip(*script_type_weights)
-        script_type = random.choices(script_types, weights=weights, k=1)[0]
-
-        # Simulate address reuse for P2PKH/P2WPKH (about 30% of the time)
-        is_reused = (
-            script_type in (ScriptType.P2PKH, ScriptType.P2WPKH)
-            and random.random() < 0.30
-        )
-
-        # Simulate public key exposure for P2PK
-        is_pubkey_exposed = script_type == ScriptType.P2PK
-
-        # Generate a fake address
-        address_prefix = {
-            ScriptType.P2PK: "1",
-            ScriptType.P2PKH: "1",
-            ScriptType.P2SH: "3",
-            ScriptType.P2WPKH: "bc1q",
-            ScriptType.P2WSH: "bc1q",
-            ScriptType.P2TR: "bc1p",
-        }.get(script_type, "1")
-        fake_hash = "".join(random.choices("0123456789abcdef", k=32))
-        address = f"{address_prefix}{fake_hash}"
-
-        # Generate a realistic BTC value (log-normal distribution)
-        value_btc = round(random.lognormvariate(mu=-2, sigma=2), 8)
-        value_btc = max(0.00001, min(value_btc, 500.0))  # Clamp to realistic range
-
-        txid = "".join(random.choices("0123456789abcdef", k=64))
-
-        return UTXO(
-            txid=txid,
-            vout=random.randint(0, 3),
-            address=address,
-            value_btc=value_btc,
-            script_type=script_type,
-            pubkey_hex="04" + "a" * 128 if is_pubkey_exposed else None,
-            is_pubkey_exposed=is_pubkey_exposed,
-            is_reused=is_reused,
-        )
+    def get_portfolio_utxos(self, count: int = 200) -> list[UTXO]:
+        """Generate a realistic mock portfolio of UTXOs."""
+        script_types = [st for st, _ in self.SCRIPT_DISTRIBUTION]
+        weights = [w for _, w in self.SCRIPT_DISTRIBUTION]
+        utxos = []
+        for i in range(count):
+            script_type = self._rng.choices(script_types, weights=weights, k=1)[0]
+            value_btc = round(self._rng.lognormvariate(mu=-2, sigma=2), 8)
+            value_btc = max(0.00001, min(value_btc, 500.0))
+            txid = hashlib.sha256(f"mock_tx_{i}_{script_type.value}".encode()).hexdigest()
+            address = self._mock_address(script_type, i)
+            reuse_prob = {
+                ScriptType.P2PKH: 0.30,
+                ScriptType.P2WPKH: 0.20,
+            }.get(script_type, 0.05)
+            utxos.append(UTXO(
+                txid=txid,
+                vout=self._rng.randint(0, 3),
+                address=address,
+                value_btc=value_btc,
+                script_type=script_type,
+                is_pubkey_exposed=script_type == ScriptType.P2PK,
+                is_reused=self._rng.random() < reuse_prob,
+            ))
+        logger.info(f"MockConnector: Generated {len(utxos)} UTXOs.")
+        return utxos
 
     def get_utxos_for_address(self, address: str) -> list[UTXO]:
-        """Returns a small set of mock UTXOs for a given address."""
-        count = random.randint(1, 5)
-        utxos = [self._generate_mock_utxo(i) for i in range(count)]
-        for utxo in utxos:
-            utxo.address = address
-        logger.info(f"MockConnector: Generated {count} UTXOs for address '{address}'.")
-        return utxos
-
-    def get_utxo_set(self, limit: int = 1000) -> list[UTXO]:
-        """Returns a set of synthetic UTXOs representing a portfolio sample."""
-        utxos = [self._generate_mock_utxo(i) for i in range(limit)]
-        logger.info(f"MockConnector: Generated {len(utxos)} UTXOs for portfolio analysis.")
-        return utxos
+        """Return a small set of mock UTXOs for a given address."""
+        seed = int(hashlib.md5(address.encode()).hexdigest(), 16) % (2 ** 31)
+        rng = random.Random(seed)
+        count = rng.randint(1, 5)
+        script_type = (
+            ScriptType.P2PKH if address.startswith("1") else
+            ScriptType.P2WPKH if address.startswith("bc1q") else
+            ScriptType.P2TR
+        )
+        return [
+            UTXO(
+                txid=hashlib.sha256(f"{address}_{i}".encode()).hexdigest(),
+                vout=i,
+                address=address,
+                value_btc=round(rng.uniform(0.001, 2.0), 8),
+                script_type=script_type,
+                is_pubkey_exposed=False,
+                is_reused=rng.random() < 0.4,
+            )
+            for i in range(count)
+        ]
 
     def broadcast_transaction(self, tx_hex: str) -> Optional[str]:
-        """Simulates a successful transaction broadcast."""
-        fake_txid = "".join(random.choices("0123456789abcdef", k=64))
+        fake_txid = hashlib.sha256(tx_hex.encode()).hexdigest()
         logger.info(f"MockConnector: Simulated broadcast. Fake TXID: {fake_txid}")
         return fake_txid
 
     def get_transaction(self, txid: str) -> Optional[dict]:
-        """Returns a mock transaction object."""
-        return {
-            "txid": txid,
-            "confirmations": random.randint(1, 10000),
-            "status": "confirmed",
-        }
+        return {"txid": txid, "confirmations": self._rng.randint(1, 10000), "status": "confirmed"}
+
+    @staticmethod
+    def _mock_address(script_type: ScriptType, idx: int) -> str:
+        prefix = {
+            ScriptType.P2PK:   "1",
+            ScriptType.P2PKH:  "1",
+            ScriptType.P2SH:   "3",
+            ScriptType.P2WPKH: "bc1q",
+            ScriptType.P2WSH:  "bc1q",
+            ScriptType.P2TR:   "bc1p",
+        }.get(script_type, "1")
+        suffix = hashlib.sha256(f"{script_type.value}_{idx}".encode()).hexdigest()[:28]
+        return f"{prefix}{suffix}"
