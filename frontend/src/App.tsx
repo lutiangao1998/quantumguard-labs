@@ -13,6 +13,7 @@ import HardwareWallet from './pages/HardwareWallet'
 import Ecosystem from './pages/Ecosystem'
 import Defense from './pages/Defense'
 import CompliancePrivacy from './pages/CompliancePrivacy'
+import QDeFi from './pages/QDeFi'
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/ecosystem"       element={<Ecosystem />} />
             <Route path="/defense"         element={<Defense />} />
             <Route path="/compliance_privacy" element={<CompliancePrivacy />} />
+            <Route path="/q_defi" element={<QDeFi />} />
           </Routes>
         </main>
       </div>

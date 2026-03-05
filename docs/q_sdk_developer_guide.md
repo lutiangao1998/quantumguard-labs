@@ -85,3 +85,121 @@ print("Contract Interaction Result:", interaction_result)
 *   支持更多编程语言的 SDK 版本（如 JavaScript, Go）。
 *   集成开发环境 (IDE) 插件。
 *   提供更丰富的合约模板和库。
+EOF'
+
+
+source /home/ubuntu/.user_env && cd . && cd /home/ubuntu/quantumguard-labs && git add quantumguard/q_chain/q_sdk/q_sdk.py docs/q_sdk_developer_guide.md && git commit -m "feat: Phase 7 - Q-Chain Developer SDK (Q-SDK)" && git push private main
+source /home/ubuntu/.user_env && cd . && mkdir -p /home/ubuntu/quantumguard-labs/quantumguard/q_defi/q_swap && cat > /home/ubuntu/quantumguard-labs/quantumguard/q_defi/q_swap/q_swap.py << 'EOF'
+import hashlib
+from typing import Dict, Any
+
+class QSwap:
+    def __init__(self):
+        self.pools: Dict[str, Dict[str, float]] = {}
+        self.fees = 0.003 # 0.3% fee
+
+    def create_pool(self, token_a: str, token_b: str, amount_a: float, amount_b: float) -> str:
+        pool_id = self._generate_pool_id(token_a, token_b)
+        if pool_id in self.pools:
+            raise ValueError("Pool already exists")
+        
+        if amount_a <= 0 or amount_b <= 0:
+            raise ValueError("Initial liquidity amounts must be positive")
+
+        self.pools[pool_id] = {
+            token_a: amount_a,
+            token_b: amount_b,
+            "k": amount_a * amount_b # Constant product
+        }
+        return pool_id
+
+    def add_liquidity(self, pool_id: str, token_a: str, amount_a: float, token_b: str, amount_b: float) -> Dict[str, float]:
+        if pool_id not in self.pools:
+            raise ValueError("Pool does not exist")
+        
+        pool = self.pools[pool_id]
+        if token_a not in pool or token_b not in pool:
+            raise ValueError("Invalid tokens for this pool")
+
+        # Simple ratio check for now, more complex logic for real AMM
+        current_ratio = pool[token_a] / pool[token_b]
+        if not (0.95 * current_ratio <= amount_a / amount_b <= 1.05 * current_ratio):
+             # Allow some slippage for simplicity in prototype
+            # In a real system, calculate LP tokens based on min received
+            pass
+
+        pool[token_a] += amount_a
+        pool[token_b] += amount_b
+        pool["k"] = pool[token_a] * pool[token_b] # Update k
+        return {token_a: pool[token_a], token_b: pool[token_b]}
+
+    def remove_liquidity(self, pool_id: str, token_a: str, amount_a: float, token_b: str, amount_b: float) -> Dict[str, float]:
+        if pool_id not in self.pools:
+            raise ValueError("Pool does not exist")
+        
+        pool = self.pools[pool_id]
+        if token_a not in pool or token_b not in pool:
+            raise ValueError("Invalid tokens for this pool")
+
+        if amount_a > pool[token_a] or amount_b > pool[token_b]:
+            raise ValueError("Insufficient liquidity in pool")
+
+        pool[token_a] -= amount_a
+        pool[token_b] -= amount_b
+        pool["k"] = pool[token_a] * pool[token_b] # Update k
+        return {token_a: pool[token_a], token_b: pool[token_b]}
+
+    def get_amount_out(self, pool_id: str, token_in: str, amount_in: float, token_out: str) -> float:
+        if pool_id not in self.pools:
+            raise ValueError("Pool does not exist")
+        
+        pool = self.pools[pool_id]
+        if token_in not in pool or token_out not in pool:
+            raise ValueError("Invalid tokens for this pool")
+        
+        if amount_in <= 0:
+            raise ValueError("Amount in must be positive")
+
+        amount_in_after_fees = amount_in * (1 - self.fees)
+        
+        reserve_in = pool[token_in]
+        reserve_out = pool[token_out]
+
+        # Constant product formula: (reserve_in + amount_in_after_fees) * (reserve_out - amount_out) = k
+        # amount_out = reserve_out - (k / (reserve_in + amount_in_after_fees))
+        amount_out = reserve_out - (reserve_in * reserve_out / (reserve_in + amount_in_after_fees))
+        
+        return amount_out
+
+    def swap(self, pool_id: str, token_in: str, amount_in: float, token_out: str) -> float:
+        if pool_id not in self.pools:
+            raise ValueError("Pool does not exist")
+        
+        pool = self.pools[pool_id]
+        if token_in not in pool or token_out not in pool:
+            raise ValueError("Invalid tokens for this pool")
+        
+        if amount_in <= 0:
+            raise ValueError("Amount in must be positive")
+
+        amount_out = self.get_amount_out(pool_id, token_in, amount_in, token_out)
+
+        if amount_out <= 0 or amount_out >= pool[token_out]:
+            raise ValueError("Slippage too high or insufficient liquidity for swap")
+
+        pool[token_in] += amount_in
+        pool[token_out] -= amount_out
+        pool["k"] = pool[token_in] * pool[token_out] # Update k
+
+        return amount_out
+
+    def _generate_pool_id(self, token_a: str, token_b: str) -> str:
+        # Ensure consistent pool ID regardless of token order
+        sorted_tokens = sorted([token_a, token_b])
+        return hashlib.sha256(f"{sorted_tokens[0]}-{sorted_tokens[1]}".encode()).hexdigest()
+
+    def get_pool_state(self, pool_id: str) -> Dict[str, float]:
+        if pool_id not in self.pools:
+            raise ValueError("Pool does not exist")
+        return self.pools[pool_id]
+

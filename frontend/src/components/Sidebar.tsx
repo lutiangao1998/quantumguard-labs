@@ -18,6 +18,7 @@ const links = [
   { to: '/ecosystem',       icon: Zap,             label: 'Ecosystem & Auto',   group: 'Actions' },
   { to: '/defense',         icon: Shield,          label: 'Full-Stack Defense', group: 'Actions' },
   { to: '/compliance_privacy', icon: ShieldCheck,   label: 'Compliance & Privacy', group: 'Actions' },
+  { to: '/q_defi',           icon: GitBranch,       label: 'Q-DeFi & Governance',  group: 'Actions' },
 ]
 
 const groups = ['Overview', 'Bitcoin', 'Ethereum', 'Actions', 'Data']
