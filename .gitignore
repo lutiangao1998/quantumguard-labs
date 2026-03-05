@@ -50,3 +50,4 @@ config/secrets.yml
 # OS
 .DS_Store
 Thumbs.db
+.github/
