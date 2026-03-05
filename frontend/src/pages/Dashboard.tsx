@@ -89,6 +89,28 @@ export default function Dashboard() {
     { name: 'SAFE',     count: data.safe_count,     btc: 0 },
   ] : []
 
+  // Custom label to prevent overflow and reduce font size
+  const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, name }: any) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 15;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill={RISK_COLORS[name]} 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central" 
+        fontSize="10" 
+        fontWeight="600"
+      >
+        {`${name} ${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -132,7 +154,15 @@ export default function Dashboard() {
                 <div className="flex-1 h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
+                      <Pie 
+                        data={pieData} 
+                        dataKey="value" 
+                        cx="50%" 
+                        cy="50%" 
+                        outerRadius={55} 
+                        label={renderCustomizedLabel}
+                        labelLine={true}
+                      >
                         {pieData.map(entry => (
                           <Cell key={entry.name} fill={RISK_COLORS[entry.name]} />
                         ))}
