@@ -11,6 +11,7 @@ import History from './pages/History'
 import GlobalRiskMap from './pages/GlobalRiskMap'
 import HardwareWallet from './pages/HardwareWallet'
 import Ecosystem from './pages/Ecosystem'
+import Defense from './pages/Defense'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/map"       element={<GlobalRiskMap />} />
             <Route path="/hardware_wallet" element={<HardwareWallet />} />
             <Route path="/ecosystem"       element={<Ecosystem />} />
+            <Route path="/defense"         element={<Defense />} />
           </Routes>
         </main>
       </div>

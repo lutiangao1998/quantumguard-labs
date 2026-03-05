@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-from api.routers import analysis, migration, reports, blockchain, keys, intelligence, hardware_wallet, ecosystem
+from api.routers import analysis, migration, reports, blockchain, keys, intelligence, hardware_wallet, ecosystem, defense
 from api.auth import init_db, _ensure_demo_key
 
 app = FastAPI(
@@ -40,6 +40,7 @@ app.include_router(keys.router,       prefix="/api/keys",       tags=["API Keys"
 app.include_router(intelligence.router, prefix="/api/intelligence", tags=["Intelligence"])
 app.include_router(hardware_wallet.router, prefix="/api/hardware_wallet", tags=["Hardware Wallet PQC"])
 app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["Ecosystem & Automation"])
+app.include_router(defense.router, prefix="/api/defense", tags=["Full-Stack Quantum Defense"])
 
 
 @app.on_event("startup")
